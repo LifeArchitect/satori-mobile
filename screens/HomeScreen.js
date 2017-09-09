@@ -17,50 +17,43 @@ import { MonoText } from '../components/StyledText';
 
 export default class HomeScreen extends React.Component {
   state = {
-    location: { "accuracy": 20,
-                "altitude": 0,
-                "heading": 0,
-                "latitude": 0,
-                "longitude": 0,
-                "speed": 0,},
+    latitude: 0,
+    longitude: 0,
     errorMessage: null,
     alertMarkers: [],
   };
-  
+
   static navigationOptions = {
     header: null,
     title: 'Map'
   };
 
+  componentDidMount = () => {
+    this.getCurrPosition()
+  }
 
-/*  componentDidMount = () => {
-      navigator.geolocation.getCurrentPosition(
-         (position) => {
-            const initialPosition = JSON.stringify(position);
-            this.setState({ location : initialPosition });
-            console.log("Your Current Location")
-         },
-         (error) => alert(error.message),
-         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );
-      this.watchID = navigator.geolocation.watchPosition((position) => {
-         const lastPosition = JSON.stringify(position);
-         this.setState({ location: lastPosition  });
-      });
-   }
+  getCurrPosition = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.setState({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          error: null,
+        });
+        console.log("Your position nowww", position)
+      },
+      (error) => this.setState({ error: error.message }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }    
+    );
+  } 
    
-
-  componentWillUnmount = () => {
-      navigator.geolocation.clearWatch(this.watchID);
-   }
-*/
 
   render() {
     let marker = { latlng: 
-                    { latitude: this.state.location.latitude, 
-                      longitude: this.state.location.longitude
-                    }, 
-                    title: "Your Location" } || ''
+                    { latitude: this.state.latitude, 
+                      longitude: this.state.longitude
+                    }
+                  }
     return (
       <View style={styles.container}>
         <Header headerText="Kiasee"/>
@@ -73,19 +66,17 @@ export default class HomeScreen extends React.Component {
             longitudeDelta: 0.0421,
           }}
         >
-        {/*marker => {(
-            <MapView.Marker
-              coordinate={marker.latlng}
-              title="This is a title"
-              description="This is a description"
-            >
-            <MapView.Callout>
-              <View>
-                <Text>This is a plain view</Text>
-              </View>
-            </MapView.Callout>
-            </MapView.Marker>
-          )}*/}
+        <MapView.Marker
+          coordinate={marker.latlng}
+          title="This is a title"
+          description="This is a description"
+        >
+        <MapView.Callout>
+          <View>
+            <Text>This is a plain view</Text>
+          </View>
+        </MapView.Callout>
+        </MapView.Marker>
 
         </MapView>          
           
