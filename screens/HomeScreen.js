@@ -69,11 +69,13 @@ export default class HomeScreen extends React.Component {
         <MapView.Marker
           coordinate={marker.latlng}
           title="This is a title"
+          image={require('../assets/images/current_location.png')}
           description="This is a description"
         >
         <MapView.Callout>
           <View>
-            <Text>This is a plain view</Text>
+            <Text>Your Current Position</Text>
+            <Text>{`There are ${this.state.alerts} alert(s) within a ${'50'} mile radius in your area`}</Text>
           </View>
         </MapView.Callout>
         </MapView.Marker>
