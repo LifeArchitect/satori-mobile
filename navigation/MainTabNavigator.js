@@ -29,13 +29,13 @@ export default TabNavigator(
         switch (routeName) {
           case 'Home':
             iconName = Platform.OS === 'ios'
-              ? `ios-information-circle${focused ? '' : '-outline'}`
-              : 'md-information-circle';
+              ? `ios-map${focused ? '' : '-outline'}`
+              : 'md-map';
             break;
           case 'Links':
             iconName = Platform.OS === 'ios'
-              ? `ios-link${focused ? '' : '-outline'}`
-              : 'md-link';
+              ? `ios-list${focused ? '' : '-outline'}`
+              : 'md-list';
             break;
           case 'Settings':
             iconName = Platform.OS === 'ios'
