@@ -25,7 +25,7 @@
 	  "bundleIdentifier": "com.kiasee.kiaseemobile"
     },
     "android": {
-      "package": "com.kiasee.kiaseemobile"
+      "package": "com.kiasee.kiaseemobile",
 	  "config": {
 		  "googleMaps":{
 			"apiKey": "AIzaSyBkQ_2lvnvT0XUJoPgLATTV24HPkcl1jl8"
