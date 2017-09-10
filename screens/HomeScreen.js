@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from '../components/Header'
 import { MapView, Constants, Location, Permissions } from 'expo';
+import RTM from "satori-rtm-sdk";
 
 import {
   Image,
@@ -28,9 +29,52 @@ export default class HomeScreen extends React.Component {
     title: 'Map'
   };
 
+  constructor(props) { 
+    super(props);
+    console.log("Props in home screen",props)
+  }
+
   componentDidMount = () => {
     this.getCurrPosition()
+    this.getLiveData()
   }
+
+  getLiveData = () => {
+    var endpoint = "wss://tpolcsom.api.satori.com";
+    var appKey = "DcB10b9b4E92C596bE37a5D30b9eE67f";
+    var channel = "test_channel";
+
+    var client = new RTM(endpoint, appKey);
+
+    client.on('enter-connected', function () {
+      console.log('Connected to Satori RTM!');
+    });
+
+    let currentAlertMarkers = this.state.alertMarkers
+    var subscription = client.subscribe(channel, RTM.SubscriptionMode.SIMPLE);
+    let liveDataObj = this;
+    subscription.on('rtm/subscription/data', function (pdu) {
+      pdu.body.messages.forEach(function (msg) {
+        console.log('Got message:', msg);
+        if (msg.lat && msg.lon)
+        {
+          currentAlertMarkers.push({
+            title: msg.disaster_type,
+            description: msg.severity,
+            coordinates: {
+              latitude: parseFloat(msg.lat),
+              longitude: parseFloat(msg.lon)
+            },
+          })}
+      });
+
+      liveDataObj.setState({alertMarkers: currentAlertMarkers})
+      console.log("alertmarkers",currentAlertMarkers)
+    });
+
+    client.start();
+
+   }
 
   getCurrPosition = () => {
     navigator.geolocation.getCurrentPosition(
@@ -68,7 +112,6 @@ export default class HomeScreen extends React.Component {
         >
         <MapView.Marker
           coordinate={marker.latlng}
-          title="This is a title"
           image={require('../assets/images/current_location.png')}
           description="This is a description"
         >
@@ -79,6 +122,14 @@ export default class HomeScreen extends React.Component {
           </View>
         </MapView.Callout>
         </MapView.Marker>
+        {this.state.alertMarkers.map((marker,i) => (
+          <MapView.Marker 
+            key={JSON.stringify(marker.coordinates + marker.title + i)}
+            coordinate={marker.coordinates}
+            title={marker.title}
+            description={marker.description}
+          />
+        ))}
 
         </MapView>          
           
