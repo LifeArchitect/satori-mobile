@@ -1,6 +1,6 @@
 import React from 'react';
 import Header from '../components/Header'
-import { MapView, Constants, Location, Permissions } from 'expo';
+import { MapView, Constants, Location, Permissions, Notifications } from 'expo';
 import RTM from "satori-rtm-sdk";
 
 import {
@@ -22,6 +22,7 @@ export default class HomeScreen extends React.Component {
     longitude: 0,
     errorMessage: null,
     alertMarkers: [],
+    fiftyMileCount: 0,
   };
 
   static navigationOptions = {
@@ -44,9 +45,9 @@ export default class HomeScreen extends React.Component {
   }
 
   getLiveData = () => {
-    var endpoint = "wss://tpolcsom.api.satori.com";
-    var appKey = "DcB10b9b4E92C596bE37a5D30b9eE67f";
-    var channel = "test_channel";
+    var endpoint = "wss://rmkrpvqu.api.satori.com";
+    var appKey = "Ecf32CF9E16bB66aC7ae656cBaef4236";
+    var channel = "data_spam_channel";
 
     var client = new RTM(endpoint, appKey);
 
@@ -54,15 +55,31 @@ export default class HomeScreen extends React.Component {
       console.log('Connected to Satori RTM!');
     });
 
+    client.on('rtm/subscribe/error', function (pdu) {
+      console.log('Failed to subscribe. RTM replied with the error ' +
+          pdu.body.error + ': ' + pdu.body.reason);
+    });
+
+    client.on('rtm/subscription/error', function (pdu) {
+      console.log('Subscription failed. RTM sent the unsolicited error ' +
+          pdu.body.error + ': ' + pdu.body.reason);
+    });
+
     let currentAlertMarkers = this.state.alertMarkers
+    let currentFiftyMileCount = this.state.fiftyMileCount
     var subscription = client.subscribe(channel, RTM.SubscriptionMode.SIMPLE);
     let liveDataObj = this;
     subscription.on('rtm/subscription/data', function (pdu) {
       pdu.body.messages.forEach(function (msg) {
         console.log('Got message:', msg);
-        if (msg.lat && msg.lon)
-        {
-          currentAlertMarkers.push({
+        if (msg.lat && msg.lon) { 
+          if (liveDataObj.calculateDistance(msg.lat,msg.lon,liveDataObj.state.latitude,liveDataObj.state.longitude,"M") <= 1000) {
+            currentFiftyMileCount+=1;
+            Expo.Notifications.presentLocalNotificationAsync({title:"New Alert: " +msg.disaster_type, body: "Severity: " + msg.severity || "Unknown" })
+          }
+
+          if (liveDataObj.calculateDistance(msg.lat,msg.lon,liveDataObj.state.latitude,liveDataObj.state.longitude,"M") <= 5000) {
+            currentAlertMarkers.push({
             title: msg.disaster_type,
             id: msg.ROWID,
             description: msg.severity,
@@ -70,16 +87,31 @@ export default class HomeScreen extends React.Component {
             coordinates: {
               latitude: parseFloat(msg.lat),
               longitude: parseFloat(msg.lon)
-            },
-          })}
-      });
+              },
+            })           
+          }
+      }});
 
-      liveDataObj.setState({alertMarkers: currentAlertMarkers})
+      liveDataObj.setState({alertMarkers: currentAlertMarkers, fiftyMileCount: currentFiftyMileCount})
     });
 
     client.start();
 
    }
+
+   calculateDistance(lat1, lon1, lat2, lon2, unit) {
+    var radlat1 = Math.PI * lat1/180
+    var radlat2 = Math.PI * lat2/180
+    var theta = lon1-lon2
+    var radtheta = Math.PI * theta/180
+    var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+    dist = Math.acos(dist)
+    dist = dist * 180/Math.PI
+    dist = dist * 60 * 1.1515
+    if (unit=="K") { dist = dist * 1.609344 }
+    if (unit=="N") { dist = dist * 0.8684 }
+    return dist
+  }
 
   getCurrPosition = () => {
     navigator.geolocation.getCurrentPosition(
@@ -97,6 +129,7 @@ export default class HomeScreen extends React.Component {
   } 
    
   getDisasterImage = (severity) => {
+    //console.log("disaster marker")
     switch(severity) {
     case 'weather':
         return require('../assets/images/disaster/weather.png')
@@ -112,9 +145,12 @@ export default class HomeScreen extends React.Component {
         break;  
     case 'earthquake':
         return require('../assets/images/disaster/earthquake.png')
+        break; 
+    case 'crime':
+        return require('../assets/images/disaster/crime.png')
         break;    
     default:{
-        console.log("NO IMAGE FOUNDS")
+        console.log("No Image Found")
       }
 }
   }
@@ -133,23 +169,33 @@ export default class HomeScreen extends React.Component {
           initialRegion={{
             latitude: 37.78825,
             longitude: -122.4324,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitudeDelta: 1.5922,
+            longitudeDelta: 1.5421,
           }}
+          animateToCoordinate={{coordinate:marker.latlng, duration: 10}}
         >
+
+        <MapView.Circle 
+          center={marker.latlng}
+          radius={80467}
+          strokeColor={this.state.fiftyMileCount > 0 ?"#ed5050" : "#4CAF50"}
+          fillColor={this.state.fiftyMileCount > 0 ?"rgba(237, 80, 80, 0.3)" : "rgba(165, 214, 167, 0.3)"}//=""//"rgba(165, 214, 167, 0.3)"
+        />
         <MapView.Marker
           coordinate={marker.latlng}
           image={require('../assets/images/current_location.png')}
           description="This is a description"
         >
+        
         <MapView.Callout>
           <View>
             <Text>Your Current Position</Text>
-            <Text>{`There are ${this.state.alerts} alert(s) within a ${'50'} mile radius in your area`}</Text>
+            <Text>{`There are ${this.state.fiftyMileCount} alert(s) within a ${'50'} mile radius in your area`}</Text>
           </View>
         </MapView.Callout>
         </MapView.Marker>
         {this.state.alertMarkers.map((marker,i) => (
+  
           <MapView.Marker 
             key={marker.id}
             coordinate={marker.coordinates}
