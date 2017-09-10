@@ -39,6 +39,10 @@ export default class HomeScreen extends React.Component {
     this.getLiveData()
   }
 
+  componentWillUnmount = () => {
+    client.unsubscribe("test_channel")
+  }
+
   getLiveData = () => {
     var endpoint = "wss://tpolcsom.api.satori.com";
     var appKey = "DcB10b9b4E92C596bE37a5D30b9eE67f";
@@ -60,7 +64,9 @@ export default class HomeScreen extends React.Component {
         {
           currentAlertMarkers.push({
             title: msg.disaster_type,
+            id: msg.ROWID,
             description: msg.severity,
+            severity: msg.severity,
             coordinates: {
               latitude: parseFloat(msg.lat),
               longitude: parseFloat(msg.lon)
@@ -69,7 +75,6 @@ export default class HomeScreen extends React.Component {
       });
 
       liveDataObj.setState({alertMarkers: currentAlertMarkers})
-      console.log("alertmarkers",currentAlertMarkers)
     });
 
     client.start();
@@ -91,6 +96,28 @@ export default class HomeScreen extends React.Component {
     );
   } 
    
+  getDisasterImage = (severity) => {
+    switch(severity) {
+    case 'weather':
+        return require('../assets/images/disaster/weather.png')
+        break;
+    case 'fire':
+        return require('../assets/images/disaster/fire.png')
+        break;
+    case 'lightning':
+        return require('../assets/images/disaster/lightning.png')
+        break;
+    case 'hurricane':
+        return require('../assets/images/disaster/hurricane.png')
+        break;  
+    case 'earthquake':
+        return require('../assets/images/disaster/earthquake.png')
+        break;    
+    default:{
+        console.log("NO IMAGE FOUNDS")
+      }
+}
+  }
 
   render() {
     let marker = { latlng: 
@@ -124,10 +151,11 @@ export default class HomeScreen extends React.Component {
         </MapView.Marker>
         {this.state.alertMarkers.map((marker,i) => (
           <MapView.Marker 
-            key={JSON.stringify(marker.coordinates + marker.title + i)}
+            key={marker.id}
             coordinate={marker.coordinates}
-            title={marker.title}
-            description={marker.description}
+            title={"Type:" + marker.title}
+            description={`Description: ${marker.description}`}
+            image={this.getDisasterImage(marker.title)}
           />
         ))}
 
