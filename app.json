@@ -21,7 +21,11 @@
       "assetExts": ["ttf"]
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+	  "bundleIdentifier": "com.kiasee.kiaseemobile"
+    },
+    "android": {
+      "package": "com.kiasee.kiaseemobile"
     }
   }
 }
